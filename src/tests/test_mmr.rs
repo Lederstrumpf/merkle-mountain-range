@@ -141,7 +141,7 @@ fn test_gen_root_from_proof() {
 }
 
 #[test]
-fn test_proof_verification() {
+fn test_invalid_proof_verification() {
     use std::fmt::{Debug, Formatter};
     use crate::{util::MemMMR, Merge, MerkleProof};
 
