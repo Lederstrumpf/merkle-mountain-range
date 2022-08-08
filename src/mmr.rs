@@ -13,6 +13,7 @@ use crate::vec::Vec;
 use crate::{Error, Merge, Result};
 use core::fmt::Debug;
 use core::marker::PhantomData;
+use crate::alloc::string::ToString;
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct MMR<T, M, S: MMRStore<T>> {
