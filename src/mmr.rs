@@ -38,7 +38,7 @@ impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T
         if let Some(elem) = pos_offset.and_then(|i| hashes.get(i as usize)) {
             return Ok(Cow::Borrowed(elem));
         }
-        let elem = self.batch.get_elem(pos)?.ok_or(0)?;
+        let elem = self.batch.get_elem(pos)?.ok_or(Error::InconsistentlyStored(0))?;
         Ok(Cow::Owned(elem))
     }
 
