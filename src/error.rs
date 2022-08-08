@@ -3,7 +3,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Error {
     GetRootOnEmpty,
-    InconsistentStore(crate::string::String),
+    InconsistentlyStored(crate::string::String),
     StoreError(crate::string::String),
     /// proof items is not enough to build a tree
     CorruptedProof,
@@ -16,7 +16,7 @@ impl core::fmt::Display for Error {
         use Error::*;
         match self {
             GetRootOnEmpty => write!(f, "Get root on an empty MMR")?,
-            InconsistentStore(msg) => write!(f, "Inconsistent store {}", msg)?,
+            InconsistentlyStored(msg) => write!(f, "Inconsistent store {}", msg)?,
             StoreError(msg) => write!(f, "Store error {}", msg)?,
             CorruptedProof => write!(f, "Corrupted proof")?,
             GenProofForInvalidLeaves => write!(f, "Generate proof ofr invalid leaves")?,
