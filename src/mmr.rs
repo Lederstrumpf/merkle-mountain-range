@@ -13,7 +13,8 @@ use crate::vec::Vec;
 use crate::{Error, Merge, Result};
 use core::fmt::Debug;
 use core::marker::PhantomData;
-use crate::alloc::string::ToString;
+// use crate::alloc::string::ToString;
+//
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct MMR<T, M, S: MMRStore<T>> {
@@ -37,7 +38,7 @@ impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T
         if let Some(elem) = pos_offset.and_then(|i| hashes.get(i as usize)) {
             return Ok(Cow::Borrowed(elem));
         }
-        let elem = self.batch.get_elem(pos)?.ok_or(Error::InconsistentlyStored("can't find elem".to_string()))?;
+        let elem = self.batch.get_elem(pos)?.ok_or(0)?;
         Ok(Cow::Owned(elem))
     }
 
@@ -80,17 +81,17 @@ impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T
         if self.mmr_size == 0 {
             return Err(Error::GetRootOnEmpty);
         } else if self.mmr_size == 1 {
-            return self.batch.get_elem(0)?.ok_or(Error::InconsistentlyStored("MMR size 1 - can't get element".to_string()));
+            return self.batch.get_elem(0)?.ok_or(Error::InconsistentlyStored(1));
         }
         let peaks: Vec<T> = get_peaks(self.mmr_size)
             .into_iter()
             .map(|peak_pos| {
                 self.batch
                     .get_elem(peak_pos)
-                    .and_then(|elem| elem.ok_or(Error::InconsistentlyStored("Can't get peak".to_string())))
+                    .and_then(|elem| elem.ok_or(Error::InconsistentlyStored(2)))
             })
             .collect::<Result<Vec<T>>>()?;
-        self.bag_rhs_peaks(peaks)?.ok_or(Error::InconsistentlyStored("Can't bag peak".to_string()))
+        self.bag_rhs_peaks(peaks)?.ok_or(Error::InconsistentlyStored(3))
     }
 
     fn bag_rhs_peaks(&self, mut rhs_peaks: Vec<T>) -> Result<Option<T>> {
@@ -123,7 +124,7 @@ impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T
             proof.push(
                 self.batch
                     .get_elem(peak_pos)?
-                    .ok_or(Error::InconsistentlyStored("no positions & can't get element".to_string()))?,
+                    .ok_or(Error::InconsistentlyStored(4))?,
             );
             return Ok(());
         }
@@ -156,7 +157,7 @@ impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T
                 proof.push(
                     self.batch
                         .get_elem(sib_pos)?
-                        .ok_or(Error::InconsistentlyStored("subtree - can't get element".to_string()))?,
+                        .ok_or(Error::InconsistentlyStored(5))?,
                 );
             }
             if parent_pos < peak_pos {
