@@ -1,5 +1,7 @@
 use super::{MergeNumberHash, NumberHash};
-use crate::{leaf_index_to_mmr_size, util::MemStore, Error, MMR};
+use crate::{
+    helper::pos_height_in_tree, leaf_index_to_mmr_size, util::MemStore, Error, MMRStoreReadOps, MMR,
+};
 use faster_hex::hex_string;
 use proptest::prelude::*;
 use rand::{seq::SliceRandom, thread_rng};
