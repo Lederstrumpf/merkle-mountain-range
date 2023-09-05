@@ -7,9 +7,10 @@
 use crate::borrow::Cow;
 use crate::collections::VecDeque;
 use crate::helper::{
-    get_peaks, is_descendant_pos, parent_offset, pos_height_in_tree, sibling_offset,
+    get_peak_map, get_peaks, is_descendant_pos, leaf_index_to_mmr_size, leaf_index_to_pos, parent_offset,
+    pos_height_in_tree, sibling_offset,
 };
-use crate::mmr_store::{MMRBatch, MMRStore};
+use crate::mmr_store::{MMRBatch, MMRStoreReadOps, MMRStoreWriteOps};
 use crate::vec;
 use crate::vec::Vec;
 use crate::{Error, Merge, Result};
@@ -23,23 +24,13 @@ pub struct MMR<T, M, S> {
     merge: PhantomData<M>,
 }
 
-impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T, M, S> {
+impl<T, M, S> MMR<T, M, S> {
     pub fn new(mmr_size: u64, store: S) -> Self {
         MMR {
             mmr_size,
             batch: MMRBatch::new(store),
             merge: PhantomData,
         }
-    }
-
-    // find internal MMR elem, the pos must exists, otherwise a error will return
-    fn find_elem<'b>(&self, pos: u64, hashes: &'b [T]) -> Result<Cow<'b, T>> {
-        let pos_offset = pos.checked_sub(self.mmr_size);
-        if let Some(elem) = pos_offset.and_then(|i| hashes.get(i as usize)) {
-            return Ok(Cow::Borrowed(elem));
-        }
-        let elem = self.batch.get_elem(pos)?.ok_or(Error::InconsistentStore)?;
-        Ok(Cow::Owned(elem))
     }
 
     pub fn mmr_size(&self) -> u64 {
@@ -50,24 +41,41 @@ impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T
         self.mmr_size == 0
     }
 
+    pub fn batch(&self) -> &MMRBatch<T, S> {
+        &self.batch
+    }
+
+    pub fn store(&self) -> &S {
+        self.batch.store()
+    }
+}
+
+impl<T: Clone + PartialEq, M: Merge<Item = T>, S: MMRStoreReadOps<T>> MMR<T, M, S> {
+    // find internal MMR elem, the pos must exists, otherwise a error will return
+    fn find_elem<'b>(&self, pos: u64, hashes: &'b [T]) -> Result<Cow<'b, T>> {
+        let pos_offset = pos.checked_sub(self.mmr_size);
+        if let Some(elem) = pos_offset.and_then(|i| hashes.get(i as usize)) {
+            return Ok(Cow::Borrowed(elem));
+        }
+        let elem = self.batch.get_elem(pos)?.ok_or(Error::InconsistentStore)?;
+        Ok(Cow::Owned(elem))
+    }
+
     // push a element and return position
     pub fn push(&mut self, elem: T) -> Result<u64> {
-        let mut elems: Vec<T> = Vec::new();
-        // position of new elem
+        let mut elems = vec![elem];
         let elem_pos = self.mmr_size;
-        elems.push(elem);
-        let mut height = 0u32;
-        let mut pos = elem_pos;
-        // continue to merge tree node if next pos heigher than current
-        while pos_height_in_tree(pos + 1) > height {
+        let peak_map = get_peak_map(self.mmr_size);
+        let mut pos = self.mmr_size;
+        let mut peak = 1;
+        while (peak_map & peak) != 0 {
+            peak <<= 1;
             pos += 1;
-            let left_pos = pos - parent_offset(height);
-            let right_pos = left_pos + sibling_offset(height);
+            let left_pos = pos - peak;
             let left_elem = self.find_elem(left_pos, &elems)?;
-            let right_elem = self.find_elem(right_pos, &elems)?;
-            let parent_elem = M::merge(&left_elem, &right_elem)?;
+            let right_elem = elems.last().expect("checked");
+            let parent_elem = M::merge(&left_elem, right_elem)?;
             elems.push(parent_elem);
-            height += 1
         }
         // store hashes
         self.batch.append(elem_pos, elems);
@@ -207,6 +215,9 @@ impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T
         if self.mmr_size == 1 && pos_list == [0] {
             return Ok(MerkleProof::new(self.mmr_size, Vec::new()));
         }
+        if pos_list.iter().any(|pos| pos_height_in_tree(*pos) > 0) {
+            return Err(Error::NodeProofsNotSupported);
+        }
         // ensure positions are sorted and unique
         pos_list.sort_unstable();
         pos_list.dedup();
@@ -246,8 +257,10 @@ impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T
 
         Ok(MerkleProof::new(self.mmr_size, proof))
     }
+}
 
-    pub fn commit(self) -> Result<()> {
+impl<T, M, S: MMRStoreWriteOps<T>> MMR<T, M, S> {
+    pub fn commit(&mut self) -> Result<()> {
         self.batch.commit()
     }
 }
@@ -259,7 +272,7 @@ pub struct MerkleProof<T, M> {
     merge: PhantomData<M>,
 }
 
-impl<T: PartialEq + Debug + Clone, M: Merge<Item = T>> MerkleProof<T, M> {
+impl<T: PartialEq + Clone, M: Merge<Item = T>> MerkleProof<T, M> {
     pub fn new(mmr_size: u64, proof: Vec<(u64, T)>) -> Self {
         MerkleProof {
             mmr_size,
@@ -325,11 +338,65 @@ impl<T: PartialEq + Debug + Clone, M: Merge<Item = T>> MerkleProof<T, M> {
         self.calculate_root(nodes)
             .map(|calculated_root| calculated_root == root)
     }
+
+    /// Verifies a old root and all incremental leaves.
+    ///
+    /// If this method returns `true`, it means the following assertion are true:
+    /// - The old root could be generated in the history of the current MMR.
+    /// - All incremental leaves are on the current MMR.
+    /// - The MMR, which could generate the old root, appends all incremental leaves, becomes the
+    ///   current MMR.
+    pub fn verify_incremental(&self, root: T, prev_root: T, incremental: Vec<T>) -> Result<bool> {
+        let current_leaves_count = get_peak_map(self.mmr_size);
+        if current_leaves_count <= incremental.len() as u64 {
+            return Err(Error::CorruptedProof);
+        }
+        // Test if previous root is correct.
+        let prev_leaves_count = current_leaves_count - incremental.len() as u64;
+        let prev_peaks_positions = {
+            let prev_index = prev_leaves_count - 1;
+            let prev_mmr_size = leaf_index_to_mmr_size(prev_index);
+            let prev_peaks_positions = get_peaks(prev_mmr_size);
+            if prev_peaks_positions.len() != self.proof.len() {
+                return Err(Error::CorruptedProof);
+            }
+            prev_peaks_positions
+        };
+        let current_peaks_positions = get_peaks(self.mmr_size);
+
+        let mut reverse_index = prev_peaks_positions.len() - 1;
+        for (i, position) in prev_peaks_positions.iter().enumerate() {
+            if *position < current_peaks_positions[i] {
+                reverse_index = i;
+                break;
+            }
+        }
+        let mut prev_peaks: Vec<_> = self.proof_items().to_vec();
+        let mut reverse_peaks = prev_peaks.split_off(reverse_index);
+        reverse_peaks.reverse();
+        prev_peaks.extend(reverse_peaks);
+
+        let calculated_prev_root = bagging_peaks_hashes::<T, M>(prev_peaks)?;
+        if calculated_prev_root != prev_root {
+            return Ok(false);
+        }
+
+        // Test if incremental leaves are correct.
+        let leaves = incremental
+            .into_iter()
+            .enumerate()
+            .map(|(index, leaf)| {
+                let pos = leaf_index_to_pos(prev_leaves_count + index as u64);
+                (pos, leaf)
+            })
+            .collect();
+        self.verify(root, leaves)
+    }
 }
 
 fn calculate_peak_root<
     'a,
-    T: 'a + PartialEq + Debug + Clone,
+    T: 'a + PartialEq + Clone,
     M: Merge<Item = T>,
     // I: Iterator<Item = &'a (u64, T)>,
 >(
@@ -372,14 +439,32 @@ fn calculate_peak_root<
         }
         // calculate sibling
         let next_height = pos_height_in_tree(pos + 1);
-        let (sib_pos, parent_pos) = {
+        let (parent_pos, parent_item) = {
             let sibling_offset = sibling_offset(height);
             if next_height > height {
                 // implies pos is right sibling
-                (pos - sibling_offset, pos + 1)
+                let sib_pos = pos - sibling_offset;
+                let parent_pos = pos + 1;
+                let parent_item = if Some(&sib_pos) == queue.front().map(|(pos, _, _)| pos) {
+                    let sibling_item = queue.pop_front().map(|(_, item, _)| item).unwrap();
+                    M::merge(&sibling_item, &item)?
+                } else {
+                    let sibling_item = proof_iter.next().ok_or(Error::CorruptedProof)?;
+                    M::merge(sibling_item, &item)?
+                };
+                (parent_pos, parent_item)
             } else {
                 // pos is left sibling
-                (pos + sibling_offset, pos + parent_offset(height))
+                let sib_pos = pos + sibling_offset;
+                let parent_pos = pos + parent_offset(height);
+                let parent_item = if Some(&sib_pos) == queue.front().map(|(pos, _, _)| pos) {
+                    let sibling_item = queue.pop_front().map(|(_, item, _)| item).unwrap();
+                    M::merge(&item, &sibling_item)?
+                } else {
+                    let sibling_item = proof_iter.next().ok_or(Error::CorruptedProof)?;
+                    M::merge(&item, sibling_item)?
+                };
+                (parent_pos, parent_item)
             }
         };
         let sibling_item = if Some(&sib_pos) == queue.front().map(|(pos, _, _)| pos) {
@@ -399,8 +484,8 @@ fn calculate_peak_root<
             return Err(Error::CorruptedProof);
         };
 
-        let parent_item = if next_height > height {
-            M::merge(&sibling_item, &item)
+        if parent_pos <= peak_pos {
+            queue.push_back((parent_pos, parent_item, height + 1))
         } else {
             M::merge(&item, &sibling_item)
         }?;
@@ -421,7 +506,7 @@ fn calculate_peak_root<
 
 fn calculate_peaks_hashes<
     'a,
-    T: 'a + PartialEq + Debug + Clone,
+    T: 'a + PartialEq + Clone,
     M: Merge<Item = T>,
     I: Iterator<Item = &'a (u64, T)>,
 >(
@@ -429,6 +514,10 @@ fn calculate_peaks_hashes<
     mmr_size: u64,
     mut proof_iter: I,
 ) -> Result<Vec<T>> {
+    if leaves.iter().any(|(pos, _)| pos_height_in_tree(*pos) > 0) {
+        return Err(Error::NodeProofsNotSupported);
+    }
+
     // special handle the only 1 leaf MMR
     if mmr_size == 1 && nodes.len() == 1 && nodes[0].0 == 0 {
         return Ok(nodes.into_iter().map(|(_pos, item)| item).collect());
@@ -480,9 +569,7 @@ fn calculate_peaks_hashes<
     Ok(peaks_hashes)
 }
 
-fn bagging_peaks_hashes<'a, T: 'a + PartialEq + Debug + Clone, M: Merge<Item = T>>(
-    mut peaks_hashes: Vec<T>,
-) -> Result<T> {
+fn bagging_peaks_hashes<T, M: Merge<Item = T>>(mut peaks_hashes: Vec<T>) -> Result<T> {
     // bagging peaks
     // bagging from right to left via hash(right, left).
     while peaks_hashes.len() > 1 {
@@ -499,7 +586,7 @@ fn bagging_peaks_hashes<'a, T: 'a + PartialEq + Debug + Clone, M: Merge<Item = T
 /// 3. bagging peaks
 fn calculate_root<
     'a,
-    T: 'a + PartialEq + Debug + Clone,
+    T: 'a + PartialEq + Clone,
     M: Merge<Item = T>,
     I: Iterator<Item = &'a (u64, T)>,
 >(
