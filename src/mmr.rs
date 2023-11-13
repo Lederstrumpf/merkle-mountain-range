@@ -15,6 +15,7 @@ use crate::vec::Vec;
 use crate::{Error, Merge, Result};
 use core::fmt::Debug;
 use core::marker::PhantomData;
+use itertools::Itertools; // For .sorted_by_key()
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct MMR<T, M, S> {
@@ -416,12 +417,12 @@ impl<T: Clone + PartialEq, M: Merge<Item = T>> MerkleProof<T, M> {
         self.mmr_size
     }
 
-    pub fn proof_items(&self) -> &[(u64, T)] {
+    pub fn proof_items(&self) -> &Vec<(u64, T)> {
         &self.proof
     }
 
     pub fn calculate_root(&self, leaves: Vec<(u64, T)>) -> Result<T> {
-        calculate_root::<_, M, _>(leaves, self.mmr_size, self.proof.iter())
+        calculate_root::<_, M>(leaves, self.mmr_size, &mut self.proof_items().clone())
     }
 
     /// from merkle proof of leaf n to calculate merkle root of n + 1 leaves.
@@ -438,8 +439,11 @@ impl<T: Clone + PartialEq, M: Merge<Item = T>> MerkleProof<T, M> {
         let pos_height = pos_height_in_tree(new_pos);
         let next_height = pos_height_in_tree(new_pos + 1);
         if next_height > pos_height {
-            let mut peaks_hashes =
-                calculate_peaks_hashes::<_, M, _>(nodes, self.mmr_size, self.proof.iter())?;
+            let mut peaks_hashes = calculate_peaks_hashes::<_, M>(
+                nodes,
+                self.mmr_size,
+                &mut self.proof_items().clone(),
+            )?;
             let mut peaks_pos = get_peaks(new_mmr_size);
             // reverse touched peaks
             let mut i = 0;
@@ -448,15 +452,15 @@ impl<T: Clone + PartialEq, M: Merge<Item = T>> MerkleProof<T, M> {
             }
             peaks_hashes[i..].reverse();
             peaks_pos[i..].reverse();
-            let peaks: Vec<(u64, T)> = peaks_pos
+            let mut peaks: Vec<(u64, T)> = peaks_pos
                 .iter()
                 .cloned()
                 .zip(peaks_hashes.iter().cloned())
                 .collect();
-            calculate_root::<_, M, _>(vec![(new_pos, new_elem)], new_mmr_size, peaks.iter())
+            calculate_root::<_, M>(vec![(new_pos, new_elem)], new_mmr_size, &mut peaks)
         } else {
             nodes.push((new_pos, new_elem));
-            calculate_root::<_, M, _>(nodes, new_mmr_size, self.proof.iter())
+            calculate_root::<_, M>(nodes, new_mmr_size, self.proof_items())
         }
     }
 
@@ -581,28 +585,24 @@ fn calculate_peak_root<
     Err(Error::CorruptedProof)
 }
 
-fn calculate_peaks_hashes<
-    'a,
-    T: 'a + PartialEq + Clone,
-    M: Merge<Item = T>,
-    I: Iterator<Item = &'a (u64, T)>,
->(
+fn calculate_peaks_hashes<'a, T: 'a + PartialEq + Clone, M: Merge<Item = T>>(
     mut nodes: Vec<(u64, T)>,
     mmr_size: u64,
-    proof_iter: I,
+    proof: &Vec<(u64, T)>,
 ) -> Result<Vec<T>> {
     // special handle the only 1 leaf MMR
     if mmr_size == 1 && nodes.len() == 1 && nodes[0].0 == 0 {
         return Ok(nodes.into_iter().map(|(_pos, item)| item).collect());
     }
 
-    let mut local_proof_items: Vec<(u64, T)> = proof_iter.cloned().collect();
-
-    nodes.append(&mut local_proof_items);
+    let mut nodes = nodes
+        .into_iter()
+        .chain(proof.into_iter().cloned())
+        .sorted_by_key(|(pos, _)| *pos)
+        .dedup_by(|a, b| a.0 == b.0)
+        .collect();
 
     // ensure nodes are sorted and unique
-    nodes.sort_by_key(|(pos, _)| *pos);
-    nodes.dedup_by(|a, b| a.0 == b.0);
     let peaks = get_peaks(mmr_size);
 
     let mut peaks_hashes: Vec<T> = Vec::with_capacity(peaks.len() + 1);
@@ -612,14 +612,9 @@ fn calculate_peaks_hashes<
             // leaf is the peak
             nodes.remove(0).1
         } else if nodes.is_empty() {
-            // if empty, means the next proof is a peak root or rhs bagged root
-            // if let Some((_, peak_root)) = proof_iter.next() {
-            //     peak_root.clone()
-            // } else {
-            // means that either all right peaks are bagged, or proof is corrupted
+            // if empty, means that either all right peaks are bagged, or proof is corrupted
             // so we break loop and check no items left
             break;
-            // }
         } else {
             calculate_peak_root::<_, M>(nodes, peak_pos)?
         };
@@ -631,14 +626,6 @@ fn calculate_peaks_hashes<
         return Err(Error::CorruptedProof);
     }
 
-    // check rhs peaks
-    // if let Some((_, rhs_peaks_hashes)) = proof_iter.next() {
-    //     peaks_hashes.push(rhs_peaks_hashes.clone());
-    // }
-    // ensure nothing left in proof_iter
-    // if proof_iter.next().is_some() {
-    //     return Err(Error::CorruptedProof);
-    // }
     Ok(peaks_hashes)
 }
 
@@ -657,17 +644,12 @@ pub fn bagging_peaks_hashes<T, M: Merge<Item = T>>(mut peaks_hashes: Vec<T>) -> 
 /// 1. sort items by position
 /// 2. calculate root of each peak
 /// 3. bagging peaks
-fn calculate_root<
-    'a,
-    T: 'a + PartialEq + Clone,
-    M: Merge<Item = T>,
-    I: Iterator<Item = &'a (u64, T)>,
->(
+fn calculate_root<'a, T: 'a + PartialEq + Clone, M: Merge<Item = T>>(
     nodes: Vec<(u64, T)>,
     mmr_size: u64,
-    proof_iter: I,
+    proof: &Vec<(u64, T)>,
 ) -> Result<T> {
-    let peaks_hashes = calculate_peaks_hashes::<_, M, _>(nodes, mmr_size, proof_iter)?;
+    let peaks_hashes = calculate_peaks_hashes::<_, M>(nodes, mmr_size, proof)?;
     bagging_peaks_hashes::<_, M>(peaks_hashes)
 }
 
