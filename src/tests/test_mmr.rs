@@ -1,6 +1,6 @@
 use super::{MergeNumberHash, NumberHash};
 use crate::{
-    helper::{get_peaks, pos_height_in_tree},
+    helper::{expected_proof_size, get_peaks, pos_height_in_tree},
     leaf_index_to_mmr_size, leaf_index_to_pos,
     util::{MemMMR, MemStore},
     Error,
@@ -301,18 +301,10 @@ proptest! {
             ])
             .expect("gen proof");
         let leaf_pos = leaf_index_to_pos(leaf_index as u64);
-        let peaks = get_peaks(mmr_size);
 
-        let parent_peak = peaks
-            .iter()
-            .position(|peak| peak > &&leaf_pos)
-            .expect("parent peak");
 
-        let parent_peak_height = pos_height_in_tree(peaks[parent_peak]);
 
-        let is_peak_not_right_most = parent_peak != peaks.len() - 1;
 
-        let calculated_proof_size = (parent_peak_height as usize) + parent_peak + is_peak_not_right_most as usize;
-        assert_eq!(proof.proof_items().len(), calculated_proof_size);
+        assert_eq!(proof.proof_items().len(), expected_proof_size(mmr_size, leaf_pos));
     }
 }

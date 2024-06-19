@@ -110,3 +110,15 @@ pub fn get_peaks(mmr_size: u64) -> Vec<u64> {
     }
     peaks
 }
+
+/// Returns the expected proof size for a `leaf_pos` within an mmr of `mmr_size`.
+pub fn expected_proof_size(mmr_size: u64, leaf_pos: u64) -> usize {
+    let peaks = get_peaks(mmr_size);
+    let parent_peak = peaks
+        .iter()
+        .position(|peak| peak > &&leaf_pos)
+        .expect("parent peak");
+    let parent_peak_height = pos_height_in_tree(peaks[parent_peak]);
+    let is_peak_not_right_most = parent_peak != peaks.len() - 1;
+    return (parent_peak_height as usize) + parent_peak + is_peak_not_right_most as usize;
+}
