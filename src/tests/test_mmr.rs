@@ -288,7 +288,7 @@ proptest! {
     }
 
     #[test]
-    fn test_expected_proof_size(mmr_leaves in 10u32..2000u32, leaf_index in 0usize..10usize) {
+    fn test_expected_proof_size((mmr_leaves, leaf_index) in count_elem(2000)) {
         let store = MemStore::default();
         let mut mmr = MemMMR::<_, MergeNumberHash>::new(0, &store);
         let mmr_size = leaf_index_to_mmr_size((mmr_leaves - 1).into());
@@ -297,7 +297,7 @@ proptest! {
             .collect();
         let proof = mmr
             .gen_proof(vec![
-                positions[leaf_index],
+                positions[leaf_index as usize],
             ])
             .expect("gen proof");
         let leaf_pos = leaf_index_to_pos(leaf_index as u64);
