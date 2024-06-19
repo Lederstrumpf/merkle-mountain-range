@@ -1,7 +1,7 @@
 use super::{MergeNumberHash, NumberHash};
 use crate::{
-    helper::pos_height_in_tree,
-    leaf_index_to_mmr_size,
+    helper::{get_peaks, pos_height_in_tree},
+    leaf_index_to_mmr_size, leaf_index_to_pos,
     util::{MemMMR, MemStore},
     Error,
 };
@@ -285,5 +285,34 @@ proptest! {
     #[test]
     fn test_random_gen_root_with_new_leaf(count in 1u32..500u32) {
         test_gen_new_root_from_proof(count);
+    }
+
+    #[test]
+    fn test_expected_proof_size(mmr_leaves in 10u32..2000u32, leaf_index in 0usize..10usize) {
+        let store = MemStore::default();
+        let mut mmr = MemMMR::<_, MergeNumberHash>::new(0, &store);
+        let mmr_size = leaf_index_to_mmr_size((mmr_leaves - 1).into());
+        let positions: Vec<u64> = (0u32..mmr_leaves)
+            .map(|i| mmr.push(NumberHash::from(i)).unwrap())
+            .collect();
+        let proof = mmr
+            .gen_proof(vec![
+                positions[leaf_index],
+            ])
+            .expect("gen proof");
+        let leaf_pos = leaf_index_to_pos(leaf_index as u64);
+        let peaks = get_peaks(mmr_size);
+
+        let parent_peak = peaks
+            .iter()
+            .position(|peak| peak > &&leaf_pos)
+            .expect("parent peak");
+
+        let parent_peak_height = pos_height_in_tree(peaks[parent_peak]);
+
+        let is_peak_not_right_most = parent_peak != peaks.len() - 1;
+
+        let calculated_proof_size = (parent_peak_height as usize) + parent_peak + is_peak_not_right_most as usize;
+        assert_eq!(proof.proof_items().len(), calculated_proof_size);
     }
 }
