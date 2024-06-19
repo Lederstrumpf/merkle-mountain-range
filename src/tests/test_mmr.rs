@@ -264,11 +264,12 @@ fn test_generic_proofs() {
 }
 
 prop_compose! {
-    fn count_elem(count: u32)
-                (elem in 0..count)
-                -> (u32, u32) {
-                    (count, elem)
-    }
+    fn count_elem(max_count: u32)
+        (count in 1..max_count)
+        (count in Just(count), elem in 0..count)
+         -> (u32, u32) {
+            (count, elem)
+        }
 }
 
 proptest! {
