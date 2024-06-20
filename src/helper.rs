@@ -119,6 +119,8 @@ pub fn expected_proof_size(mmr_size: u64, leaf_pos: u64) -> usize {
         .position(|peak| peak >= &&leaf_pos)
         .expect("parent peak");
     let parent_peak_height = pos_height_in_tree(peaks[parent_peak]);
-    let is_peak_not_right_most = parent_peak != peaks.len();
-    return (parent_peak_height as usize) + parent_peak + is_peak_not_right_most as usize;
+    let is_peak_not_right_most = parent_peak != peaks.len() - 1;
+    let expected_proof_size =
+        (parent_peak_height as usize) + parent_peak + is_peak_not_right_most as usize;
+    return expected_proof_size;
 }

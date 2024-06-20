@@ -278,7 +278,7 @@ proptest! {
         let mut leaves: Vec<u32> = (0..count).collect();
         let mut rng = thread_rng();
         leaves.shuffle(&mut rng);
-        let leaves_count = rng.gen_range(1..count - 1);
+        let leaves_count = rng.gen_range(1..count);
         leaves.truncate(leaves_count as usize);
         test_mmr(count, leaves);
     }
@@ -289,7 +289,7 @@ proptest! {
     }
 
     #[test]
-    fn test_expected_proof_size((mmr_leaves, leaf_index) in count_elem(2000)) {
+    fn test_expected_proof_size((mmr_leaves, leaf_index) in count_elem(2_000)) {
         let store = MemStore::default();
         let mut mmr = MemMMR::<_, MergeNumberHash>::new(0, &store);
         let mmr_size = leaf_index_to_mmr_size((mmr_leaves - 1).into());
@@ -301,11 +301,63 @@ proptest! {
                 positions[leaf_index as usize],
             ])
             .expect("gen proof");
-        let leaf_pos = leaf_index_to_pos(leaf_index as u64);
 
 
 
+        let leaf_pos = positions[leaf_index as usize];
 
         assert_eq!(proof.proof_items().len(), expected_proof_size(mmr_size, leaf_pos));
+    }
+}
+
+#[test]
+fn test_hardcoded_expected_proof_size() {
+    let store = MemStore::default();
+    let mut mmr = MemMMR::<_, MergeNumberHash>::new(0, &store);
+    let mut positions: Vec<u64> = Vec::new();
+    let blocks_per_minute = 10;
+    let blocks_per_year = blocks_per_minute * 60 * 24 * 365;
+    let prep_size = blocks_per_year * 2;
+    let build_mmr = false;
+    if build_mmr {
+        for i in 0..prep_size {
+            positions.push(mmr.push(NumberHash::from(i)).unwrap());
+            if i % 100_000 == 0 {
+                println!("i: {:?}", i);
+            }
+        }
+    }
+    let intervals = [1, 5, 15, 30, 60];
+    let mut proof_aggregate = vec![0u64; intervals.len()];
+    let mut proofs_count = vec![0u64; intervals.len()];
+    for mmr_leaves in prep_size..prep_size + (blocks_per_year * 5) {
+        let mmr_size = leaf_index_to_mmr_size((mmr_leaves - 1).into());
+        for interval in 0..intervals.len() {
+            for j in 1..(intervals[interval] * blocks_per_minute) {
+                let leaf_index = mmr_leaves - j;
+                let leaf_pos = leaf_index_to_pos(leaf_index.into());
+                let expected_proof_size = expected_proof_size(mmr_size, leaf_pos);
+                if build_mmr {
+                    let proof = mmr.gen_proof(vec![leaf_pos]).expect("gen proof");
+                    assert_eq!(proof.proof_items().len(), expected_proof_size);
+                }
+                proof_aggregate[interval] += expected_proof_size as u64;
+                proofs_count[interval] += 1;
+            }
+        }
+        if build_mmr {
+            positions.push(mmr.push(NumberHash::from(mmr_leaves)).unwrap());
+        }
+        if mmr_leaves % 1000 == 0 {
+            println!(
+                "{}: {:?}",
+                mmr_leaves,
+                proof_aggregate
+                    .iter()
+                    .zip(proofs_count.iter())
+                    .map(|(a, b)| *a as f64 / *b as f64)
+                    .collect::<Vec<_>>(),
+            );
+        }
     }
 }
