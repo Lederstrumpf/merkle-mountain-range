@@ -1,0 +1,99 @@
+
+running 47 tests
+test tests::test_accumulate_headers::test_insert_header ... ignored
+test tests::test_ancestry::test_ancestry ... ignored
+test tests::test_helper::test_get_peak_map ... ignored
+test tests::test_helper::test_get_peaks ... ignored
+test tests::test_helper::test_leaf_index_to_mmr_size ... ignored
+test tests::test_helper::test_leaf_index_to_mmr_size_randomly ... ignored
+test tests::test_helper::test_leaf_index_to_pos ... ignored
+test tests::test_helper::test_leaf_index_to_pos_randomly ... ignored
+test tests::test_helper::test_pos_height_in_tree ... ignored
+test tests::test_incremental::test_incremental ... ignored
+test tests::test_mmr::test_empty_mmr_root ... ignored
+test tests::test_mmr::test_gen_proof_with_duplicate_leaves ... ignored
+test tests::test_mmr::test_gen_root_from_proof ... ignored
+test tests::test_mmr::test_generic_proofs ... ignored
+test tests::test_mmr::test_mmr_1_elem ... ignored
+test tests::test_mmr::test_mmr_1_peak ... ignored
+test tests::test_mmr::test_mmr_2_elems ... ignored
+test tests::test_mmr::test_mmr_2_leaves_merkle_proof ... ignored
+test tests::test_mmr::test_mmr_2_peaks ... ignored
+test tests::test_mmr::test_mmr_2_sibling_leaves_merkle_proof ... ignored
+test tests::test_mmr::test_mmr_3_leaves_merkle_proof ... ignored
+test tests::test_mmr::test_mmr_3_peaks ... ignored
+test tests::test_mmr::test_mmr_first_elem_proof ... ignored
+test tests::test_mmr::test_mmr_last_elem_proof ... ignored
+test tests::test_mmr::test_mmr_root ... ignored
+test tests::test_mmr::test_random_gen_root_with_new_leaf ... ignored
+test tests::test_mmr::test_random_mmr ... ignored
+test tests::test_node_mmr::test_7_leaf_mmr_generic_proof_proptest ... ignored
+test tests::test_node_mmr::test_empty_mmr_root ... ignored
+test tests::test_node_mmr::test_gen_proof_with_duplicate_leaves ... ignored
+test tests::test_node_mmr::test_gen_root_from_proof ... ignored
+test tests::test_node_mmr::test_generic_proofs ... ignored
+test tests::test_node_mmr::test_mmr_1_elem ... ignored
+test tests::test_node_mmr::test_mmr_1_peak ... ignored
+test tests::test_node_mmr::test_mmr_2_elems ... ignored
+test tests::test_node_mmr::test_mmr_2_leaves_merkle_proof ... ignored
+test tests::test_node_mmr::test_mmr_2_peaks ... ignored
+test tests::test_node_mmr::test_mmr_2_sibling_leaves_merkle_proof ... ignored
+test tests::test_node_mmr::test_mmr_3_leaves_merkle_proof ... ignored
+test tests::test_node_mmr::test_mmr_3_peaks ... ignored
+test tests::test_node_mmr::test_mmr_first_elem_proof ... ignored
+test tests::test_node_mmr::test_mmr_generic_proof_proptest ... ignored
+test tests::test_node_mmr::test_mmr_last_elem_proof ... ignored
+test tests::test_node_mmr::test_mmr_root ... ignored
+test tests::test_node_mmr::test_random_gen_root_with_new_leaf ... ignored
+test tests::test_node_mmr::test_random_mmr ... ignored
+test tests::test_sequence::test_sequence ... ignored
+
+test result: ok. 0 passed; 0 failed; 47 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+left_index_to_pos       time:   [23.596 ns 23.647 ns 23.701 ns]
+                        change: [-1.3451% -1.0487% -0.7101%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+
+left_index_to_mmr_size  time:   [23.515 ns 23.574 ns 23.636 ns]
+                        change: [+0.1750% +0.6014% +1.0249%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+
+MMR gen proof           time:   [2.8675 µs 2.8771 µs 2.8916 µs]
+                        change: [-5.0519% -2.4866% +0.0380%] (p = 0.07 > 0.05)
+                        No change in performance detected.
+Found 3 outliers among 20 measurements (15.00%)
+  2 (10.00%) high mild
+  1 (5.00%) high severe
+
+MMR gen node-proof      time:   [3.0480 µs 3.0748 µs 3.1126 µs]
+                        change: [-3.0290% +0.0257% +3.0597%] (p = 0.99 > 0.05)
+                        No change in performance detected.
+Found 2 outliers among 20 measurements (10.00%)
+  1 (5.00%) high mild
+  1 (5.00%) high severe
+
+MMR gen ancestry-proof  time:   [5.0449 µs 5.0657 µs 5.0919 µs]
+                        change: [-3.3847% -1.0245% +1.2955%] (p = 0.42 > 0.05)
+                        No change in performance detected.
+Found 2 outliers among 20 measurements (10.00%)
+  1 (5.00%) high mild
+  1 (5.00%) high severe
+
+MMR verify              time:   [4.0062 µs 4.0275 µs 4.0560 µs]
+                        change: [+0.3888% +1.0602% +1.8438%] (p = 0.01 < 0.05)
+                        Change within noise threshold.
+Found 3 outliers among 20 measurements (15.00%)
+  1 (5.00%) high mild
+  2 (10.00%) high severe
+
+MMR verify node-proof   time:   [5.0645 µs 5.0920 µs 5.1255 µs]
+                        change: [-2.0427% -1.2124% -0.2689%] (p = 0.01 < 0.05)
+                        Change within noise threshold.
+
+MMR verify ancestry-proof
+                        time:   [1.6940 µs 1.7041 µs 1.7161 µs]
+                        change: [+2.4316% +3.1357% +3.9109%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+

@@ -1,0 +1,72 @@
+[
+  {
+    "left_index_to_pos": 23.4867,
+    "left_index_to_mmr_size": 23.3944,
+    "MMR gen proof": 2835.5099999999998,
+    "MMR gen node-proof": 3204.2200000000003,
+    "MMR gen ancestry-proof": 5066.37,
+    "MMR verify  ": 4047.08,
+    "MMR verify node-proof": 5974.17,
+    "commit": "21b7d23f7e3d7bbf618db831815d9b7520d8cb2f"
+  },
+  {
+    "left_index_to_pos": 23.5592,
+    "left_index_to_mmr_size": 23.394199999999998,
+    "MMR gen proof": 2797.7799999999997,
+    "MMR gen node-proof": 3202.08,
+    "MMR gen ancestry-proof": 5073.42,
+    "MMR verify  ": 4004.9300000000003,
+    "MMR verify node-proof": 6019.2699999999995,
+    "commit": "a56e240d70b953926c978bcf154d84eafd6ea27d"
+  },
+  {
+    "left_index_to_pos": 23.1394,
+    "left_index_to_mmr_size": 23.615,
+    "MMR gen proof": 2836.42,
+    "MMR gen node-proof": 3417.95,
+    "MMR gen ancestry-proof": 5090.24,
+    "MMR verify  ": 4037.07,
+    "MMR verify node-proof": 6070.67,
+    "commit": "5dd93e7680a1afae415ade4d54fb61cf4bba7f27"
+  },
+  {
+    "left_index_to_pos": 23.4735,
+    "left_index_to_mmr_size": 23.4039,
+    "MMR gen proof": 2863.73,
+    "MMR gen node-proof": 2994.62,
+    "MMR gen ancestry-proof": 4991.64,
+    "MMR verify  ": 4017.82,
+    "MMR verify node-proof": 5083.48,
+    "commit": "ceca9189865f51f08384f70897e9e26aed2fbb31"
+  },
+  {
+    "left_index_to_pos": 23.5644,
+    "left_index_to_mmr_size": 23.4062,
+    "MMR gen proof": 2863.56,
+    "MMR gen node-proof": 3021.86,
+    "MMR gen ancestry-proof": 5023.4800000000005,
+    "MMR verify  ": 4012.0299999999997,
+    "MMR verify node-proof": 5152.83,
+    "commit": "7ecd4eba3b5bf4c15af5b164a72087992bb4ff26"
+  },
+  {
+    "left_index_to_pos": 23.4485,
+    "left_index_to_mmr_size": 23.4014,
+    "MMR gen proof": 2868.89,
+    "MMR gen node-proof": 2983.85,
+    "MMR gen ancestry-proof": 4999.46,
+    "MMR verify  ": 4018.74,
+    "MMR verify node-proof": 5069.21,
+    "commit": "d3a13d6b8409033353b32441d437294a479706ca"
+  },
+  {
+    "left_index_to_pos": 23.9004,
+    "left_index_to_mmr_size": 23.6875,
+    "MMR gen proof": 2855.86,
+    "MMR gen node-proof": 2991.52,
+    "MMR gen ancestry-proof": 5019.62,
+    "MMR verify  ": 4004.74,
+    "MMR verify node-proof": 4877.69,
+    "commit": "92ab2e2cf8aaf9caa9985aff065bacc6df75a413"
+  }
+]
