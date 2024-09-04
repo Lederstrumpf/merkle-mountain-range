@@ -93,8 +93,7 @@ Found 3 outliers among 20 measurements (15.00%)
   1 (5.00%) high mild
   2 (10.00%) high severe
 
-MMR verify ancestry-proof
-                        time:   [1.6399 µs 1.6513 µs 1.6686 µs]
+MMR verify ancestry-proof time:   [1.6399 µs 1.6513 µs 1.6686 µs]
                         change: [-2.8890% -1.6125% -0.2403%] (p = 0.03 < 0.05)
                         Change within noise threshold.
 

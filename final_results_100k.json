@@ -7,6 +7,7 @@
     "MMR gen ancestry-proof": 5066.37,
     "MMR verify  ": 4047.08,
     "MMR verify node-proof": 5974.17,
+    "MMR verify ancestry-proof": 1668.82,
     "commit": "21b7d23f7e3d7bbf618db831815d9b7520d8cb2f",
     "message": "calculate proof size from flipped sub-mmr\n\nCalculating the number of copath items required for the proof of the\n`prev_peaks` living beneath some peak can be done\nsimultaneously more succinctly & efficiently as follows:\nEach peak is a perfect merkle tree. Therefore if we have some `prev_peaks`\nliving beneath a given `peak`, then the number of co-path items to\nprove said `prev_peaks` equals the number of peaks that would be formed\nfor a sub-mmr with `leaf_count = leaves(peak) - leaves(prev_peaks)`. This is akin to\nflipping the construction of the sub-mmr to be right-to-left and\ncounting its peaks."
   },
@@ -18,6 +19,7 @@
     "MMR gen ancestry-proof": 5073.42,
     "MMR verify  ": 4004.9300000000003,
     "MMR verify node-proof": 6019.2699999999995,
+    "MMR verify ancestry-proof": 1664.37,
     "commit": "a56e240d70b953926c978bcf154d84eafd6ea27d",
     "message": "use entry API"
   },
@@ -29,6 +31,7 @@
     "MMR gen ancestry-proof": 5090.24,
     "MMR verify  ": 4037.07,
     "MMR verify node-proof": 6070.67,
+    "MMR verify ancestry-proof": 1660.29,
     "commit": "5dd93e7680a1afae415ade4d54fb61cf4bba7f27",
     "message": "Use BTreeSet/BTreeMap"
   },
@@ -40,6 +43,7 @@
     "MMR gen ancestry-proof": 4991.64,
     "MMR verify  ": 4017.82,
     "MMR verify node-proof": 5083.48,
+    "MMR verify ancestry-proof": 1660.89,
     "commit": "ceca9189865f51f08384f70897e9e26aed2fbb31",
     "message": "Add comments"
   },
@@ -51,6 +55,7 @@
     "MMR gen ancestry-proof": 5023.4800000000005,
     "MMR verify  ": 4012.0299999999997,
     "MMR verify node-proof": 5152.83,
+    "MMR verify ancestry-proof": 1682.66,
     "commit": "7ecd4eba3b5bf4c15af5b164a72087992bb4ff26",
     "message": "Compute optimal ancestry proof size"
   },
@@ -62,6 +67,7 @@
     "MMR gen ancestry-proof": 4999.46,
     "MMR verify  ": 4018.74,
     "MMR verify node-proof": 5069.21,
+    "MMR verify ancestry-proof": 1658.1100000000001,
     "commit": "d3a13d6b8409033353b32441d437294a479706ca",
     "message": "Adjust node proofs verification logic"
   },
@@ -73,6 +79,7 @@
     "MMR gen ancestry-proof": 5019.62,
     "MMR verify  ": 4004.74,
     "MMR verify node-proof": 4877.69,
+    "MMR verify ancestry-proof": 1661.82,
     "commit": "92ab2e2cf8aaf9caa9985aff065bacc6df75a413",
     "message": "add comparison bench"
   }

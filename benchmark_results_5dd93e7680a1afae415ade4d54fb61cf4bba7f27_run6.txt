@@ -90,8 +90,7 @@ MMR verify node-proof   time:   [6.0806 µs 6.1215 µs 6.1623 µs]
                         change: [-1.6373% -0.5072% +0.5595%] (p = 0.39 > 0.05)
                         No change in performance detected.
 
-MMR verify ancestry-proof
-                        time:   [1.6697 µs 1.6803 µs 1.6898 µs]
+MMR verify ancestry-proof time:   [1.6697 µs 1.6803 µs 1.6898 µs]
                         change: [-1.2389% -0.5148% +0.1983%] (p = 0.17 > 0.05)
                         No change in performance detected.
 

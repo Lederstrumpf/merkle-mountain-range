@@ -10,7 +10,9 @@ run_benchmarks() {
   local commit=$1
   local run=$2
   echo "Running benchmarks for commit $commit (Run $run)"
-  cargo bench MMR > "benchmark_results_${commit}_run${run}.txt"
+  file="benchmark_results_${commit}_run${run}.txt"
+  cargo bench MMR > $file
+  sed -i ':a;N;$!ba;s/MMR verify ancestry-proof\n\s*/MMR verify ancestry-proof /g' $file
 }
 
 for commit in "${commits[@]}"; do

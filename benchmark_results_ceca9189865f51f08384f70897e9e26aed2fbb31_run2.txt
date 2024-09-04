@@ -87,8 +87,7 @@ MMR verify node-proof   time:   [5.1154 µs 5.1329 µs 5.1541 µs]
 Found 2 outliers among 20 measurements (10.00%)
   2 (10.00%) high mild
 
-MMR verify ancestry-proof
-                        time:   [1.6545 µs 1.6674 µs 1.6813 µs]
+MMR verify ancestry-proof time:   [1.6545 µs 1.6674 µs 1.6813 µs]
                         change: [-1.8782% -0.3750% +1.0718%] (p = 0.63 > 0.05)
                         No change in performance detected.
 Found 1 outliers among 20 measurements (5.00%)

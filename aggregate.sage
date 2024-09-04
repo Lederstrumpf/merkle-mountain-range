@@ -15,6 +15,7 @@ BENCHMARK_NAMES = [
     "MMR gen node-proof",
     "MMR gen ancestry-proof",
     "MMR verify node-proof",
+    "MMR verify ancestry-proof",
     "MMR verify  ",
 ]
 

@@ -92,8 +92,7 @@ Found 2 outliers among 20 measurements (10.00%)
   1 (5.00%) low mild
   1 (5.00%) high mild
 
-MMR verify ancestry-proof
-                        time:   [1.6927 µs 1.6968 µs 1.7020 µs]
+MMR verify ancestry-proof time:   [1.6927 µs 1.6968 µs 1.7020 µs]
                         change: [+1.3921% +2.2160% +3.1474%] (p = 0.00 < 0.05)
                         Performance has regressed.
 Found 2 outliers among 20 measurements (10.00%)
