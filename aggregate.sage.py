@@ -8,6 +8,7 @@ _sage_const_1 = Integer(1); _sage_const_1000 = Integer(1000); _sage_const_2 = In
 import json
 import os
 import re
+import subprocess
 from collections import defaultdict
 from statistics import mean
 
@@ -33,7 +34,6 @@ COMMIT_ORDER = [
     "92ab2e2cf8aaf9caa9985aff065bacc6df75a413"
 ]
 
-# Function to parse a single benchmark result file
 def parse_benchmark_file(filename):
     results = {}
     with open(filename, 'r') as f:
@@ -53,6 +53,10 @@ def parse_benchmark_file(filename):
                             results[benchmark] = time_value
                     break
     return results
+
+def get_commit_message(commit_hash):
+    result = subprocess.run(['git', 'log', '-1', '--pretty=%B', commit_hash], capture_output=True, text=True)
+    return result.stdout.strip()
 
 # Get all benchmark result files
 os.chdir("/home/lederstrumpf/parity/merkle-mountain-range")
@@ -78,6 +82,7 @@ for commit in COMMIT_ORDER:
         # Calculate averages
         avg_results = {benchmark: mean(times) for benchmark, times in commit_results.items()}
         avg_results['commit'] = commit
+        avg_results['message'] = get_commit_message(commit)
         final_results.append(avg_results)
     else:
         print(f"Warning: No data found for commit {commit}")
