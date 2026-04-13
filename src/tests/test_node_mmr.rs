@@ -7,7 +7,7 @@ use crate::{
 use core::ops::Shl;
 use faster_hex::hex_string;
 use proptest::prelude::*;
-use rand::{seq::SliceRandom, thread_rng};
+use rand::{seq::SliceRandom, thread_rng, Rng};
 
 fn test_mmr(count: u32, proof_elem: Vec<u32>) {
     let store = MemStore::default();
@@ -284,6 +284,52 @@ fn test_generic_proofs() {
     test_invalid_proof_verification(7, vec![0, 2, 3, 7, 8, 9, 10], vec![0], None, None);
     test_invalid_proof_verification(7, vec![0, 3, 7, 8, 9, 10], vec![0], None, None);
     test_invalid_proof_verification(7, vec![0, 2, 3, 7, 8, 9, 10], vec![0], None, None);
+}
+
+#[test]
+fn test_unconsumed_leaves_to_prove() {
+    use crate::{Merge, MerkleProof};
+    use std::fmt::{Debug, Formatter};
+
+    // Simple item struct to allow debugging the contents of MMR nodes/peaks
+    #[derive(Clone, PartialEq)]
+    enum MyItem {
+        Number(u32),
+        Merged(Box<MyItem>, Box<MyItem>),
+    }
+
+    impl Debug for MyItem {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            match self {
+                MyItem::Number(x) => f.write_fmt(format_args!("{}", x)),
+                MyItem::Merged(a, b) => f.write_fmt(format_args!("Merged({:#?}, {:#?})", a, b)),
+            }
+        }
+    }
+
+    #[derive(Debug)]
+    struct MyMerge;
+
+    impl Merge for MyMerge {
+        type Item = MyItem;
+        fn merge(lhs: &Self::Item, rhs: &Self::Item) -> Result<Self::Item, crate::Error> {
+            Ok(MyItem::Merged(Box::new(lhs.clone()), Box::new(rhs.clone())))
+        }
+    }
+
+    let root = MyItem::Number(9007);
+    let proof = MerkleProof::<MyItem, MyMerge>::new(
+        1,
+        vec![root.clone()]
+    );
+    let err = proof
+      .verify(
+          root,
+          vec![(1, MyItem::Number(31337))],
+      )
+      .unwrap_err();
+
+    assert_eq!(err, Error::UnconsumedLeaves);
 }
 
 prop_compose! {

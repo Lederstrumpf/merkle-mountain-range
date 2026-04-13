@@ -678,7 +678,7 @@ fn calculate_peaks_hashes<'a, T: 'a + Clone, M: Merge<Item = T>, I: Iterator<Ite
 
     // ensure nothing left in leaves
     if !leaves.is_empty() {
-        return Err(Error::CorruptedProof);
+        return Err(Error::UnconsumedLeaves);
     }
 
     // check rhs peaks
